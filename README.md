@@ -1,2 +1,2 @@
 # lady-whiskey
-Software for Lady Whiskey art car
+Software for Lady Whiskey mutant vehicle 
