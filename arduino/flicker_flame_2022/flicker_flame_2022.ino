@@ -1,81 +1,74 @@
-//+--------------------------------------------------------------------------
-//
-// NightDriver - (c) 2018 Dave Plummer.  All Rights Reserved.
-//
-// File:        LED Episode 08
-//
-// Description:
-//
-//   Draws sample effects on a an addressable strip using FastLED
-//
-// History:     Sep-15-2020     davepl      Created
-//              Oct-05-2020     davepl      Revised for Episode 07
-//              Oct-11-2020     davepl      Revised for Episode 08
-//              Oct-16-2020     davepl      Revised for Episode 09
-//---------------------------------------------------------------------------
-
-#include <Arduino.h>            // Arduino Framework
-#define FASTLED_INTERNAL        // Suppress build banner
+#include <Arduino.h>  // Arduino Framework
 #include <FastLED.h>
+#include <avr/pgmspace.h>
+#include "data.h"
 
-#define NUM_LEDS    250          // FastLED definitions
-#define LED_PIN     6
+#define LEDS_PER_FULL_STRIP (LEDS_PER_STRIP * 2)  // FastLED definitions
+#define NUM_STRIPS 5
+#define LED_PIN_0 6
+#define LED_PIN_1 7
+#define LED_PIN_2 8
+#define LED_PIN_3 9
+#define LED_PIN_4 10
 
-CRGB g_LEDs[NUM_LEDS] = {0};    // Frame buffer for FastLED
+CRGB g_LEDs[LEDS_PER_FULL_STRIP * NUM_STRIPS] = { 0 };  // Frame buffer for FastLED
 
-int g_lineHeight = 0;
-int g_Brightness = 200;         // 0-255 LED brightness scale
-int g_PowerLimit = 3000;         // 900mW Power Limit
+int g_Brightness = 15;   // 0-255 LED brightness scale
+int g_PowerLimit = 9000;  // 900mW Power Limit
 
-#include "ledgfx.h"
-#include "fire.h"
+int stripByteCount = 3 * LEDS_PER_STRIP;
+void copyFrame(int frameNum, int strip, void* dest) {
+ memcpy_PF(dest, getFrame(frameNum, strip), stripByteCount);
+  //memcpy_P(dest, frameStrips[frameNum * NUM_STRIPS + strip], stripByteCount);
+}
 
-void setup() 
+void setup()
 {
+  // initializeFrameStrips();
   pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(LED_PIN, OUTPUT);
+  for (int i = 0; i < NUM_STRIPS; i++) {
+    pinMode(LED_PIN_0 + i, OUTPUT);
+  }
 
   Serial.begin(115200);
-  while (!Serial) { }
+  while (!Serial) {
+  }
   Serial.println("ESP32 Startup");
 
-  FastLED.addLeds<WS2812B, LED_PIN, GRB>(g_LEDs, NUM_LEDS);               // Add our LED strip to the FastLED library
+  // Add our LED strip to the FastLED library
+  FastLED.addLeds<WS2812B, LED_PIN_0, GRB>(g_LEDs + LEDS_PER_FULL_STRIP * 0, LEDS_PER_FULL_STRIP);
+  FastLED.addLeds<WS2812B, LED_PIN_1, GRB>(g_LEDs + LEDS_PER_FULL_STRIP * 1, LEDS_PER_FULL_STRIP);
+  FastLED.addLeds<WS2812B, LED_PIN_2, GRB>(g_LEDs + LEDS_PER_FULL_STRIP * 2, LEDS_PER_FULL_STRIP);
+  FastLED.addLeds<WS2812B, LED_PIN_3, GRB>(g_LEDs + LEDS_PER_FULL_STRIP * 3, LEDS_PER_FULL_STRIP);
+  FastLED.addLeds<WS2812B, LED_PIN_4, GRB>(g_LEDs + LEDS_PER_FULL_STRIP * 4, LEDS_PER_FULL_STRIP);
   FastLED.setBrightness(g_Brightness);
-  set_max_power_indicator_LED(LED_BUILTIN);                               // Light the builtin LED if we power throttle
-  FastLED.setMaxPowerInMilliWatts(g_PowerLimit);                          // Set the power limit, above which brightness will be throttled
+  set_max_power_indicator_LED(LED_BUILTIN);       // Light the builtin LED if we power throttle
+  FastLED.setMaxPowerInMilliWatts(g_PowerLimit);  // Set the power limit, above which brightness will be throttled
+
 }
 
-void DrawMarqueeComparison()
+int offset = 0;
+int frame = 0;
+
+void loop()
 {
-  static float scroll = 0.0f;
-  scroll += 0.1f;
-  if (scroll > 5.0)
-    scroll -= 5.0;
+  FastLED.clear();
 
-  for (float i = scroll; i < NUM_LEDS/2 -1; i+= 5)
-  {
-    DrawPixels(i, 3, CRGB::Green);
-    DrawPixels(NUM_LEDS-1-(int)i, 3, CRGB::Red);
+  for (int i = 0; i < NUM_STRIPS; i++) {
+    int frameStrip = (i + offset) % NUM_STRIPS;
+    // Get first half of strip
+    copyFrame(frame, frameStrip, g_LEDs + LEDS_PER_FULL_STRIP * i);
+    // Second half is just the first half mirrored
+    for (int j = 0; j < LEDS_PER_STRIP; j++) {
+      g_LEDs[LEDS_PER_FULL_STRIP * (i + 1) - j - 1] = g_LEDs[LEDS_PER_FULL_STRIP * i + j];
+    }
   }
-}
-
-void loop() 
-{
-  bool bLED = 0;
-
-  //ClassicFireEffect fire(NUM_LEDS, 30, 100, 3, 2, false, true);   // Outwards from Middle
-  //ClassicFireEffect fire(NUM_LEDS, 30, 100, 3, 2, true, true);    // Inwards toward Middle
-  ClassicFireEffect fire(NUM_LEDS, 50, 300, 30, 30, true, true);     // Outwards from Zero
-  //ClassicFireEffect fire(NUM_LEDS, 20, 100, 3, 4, false, false);     // Inwards from End
-  //ClassicFireEffect fire(NUM_LEDS, 50, 300, 30, 12, true, false);     // More Intense, Extra Sparking
-
-  // ClassicFireEffect fire(NUM_LEDS, 20, 100, 3, NUM_LEDS, true, false);     // Fan with correct rotation
-
-  while (true)
+  FastLED.show(g_Brightness);
+  frame++;
+  if (frame >= NUM_FRAMES)
   {
-    FastLED.clear();
-    fire.DrawFire();
-    FastLED.show(g_Brightness);                          //  Show and delay
-
+    frame = 0;
+    offset = (offset + 1) % NUM_STRIPS;
   }
+  delay(100);
 }
