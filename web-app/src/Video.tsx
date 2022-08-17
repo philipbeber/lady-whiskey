@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import CopyToClipboard from "react-copy-to-clipboard";
 
 const numStrips = 5;
-const numLeds = 125;
+const numLeds = 150;
 const ledSize = 3;
-const ledCount = 125;
-const height = ledSize * ledCount;
+const height = ledSize * numLeds;
+const bottomOffsetPercent = 20;
 
 interface HTMLVideoElement2 extends HTMLVideoElement {
   captureStream(): MediaStream;
@@ -150,6 +150,7 @@ const Video: React.FC = () => {
     const svgData = [] as string[][];
     const arduinoFrame = [] as number[][];
     // console.log(data.length, frame.width, frame.height);
+    const frameHeight = frame.height * (1 - bottomOffsetPercent / 100);
     for (let ledX = 0; ledX < numStrips; ledX++) {
       const svgStrip = [] as string[];
       svgData.push(svgStrip);
@@ -158,14 +159,14 @@ const Video: React.FC = () => {
       const pixelX = Math.floor((frame.width / numStrips) * ledX);
       for (let ledY = 0; ledY < numLeds; ledY++) {
         const pixelY = Math.floor(
-          frame.height - (frame.height / numLeds) * (ledY + 1)
+          frameHeight - (frameHeight / numLeds) * (ledY + 1)
         );
         const rawLeds = average(
           data,
           pixelX,
           pixelY,
           frame.width / numStrips,
-          frame.height / numLeds,
+          frameHeight / numLeds,
           frame.width
         );
         // const idx = 4 * (pixelY * frame.width + pixelX);
