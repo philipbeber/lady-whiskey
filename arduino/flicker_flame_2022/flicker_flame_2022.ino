@@ -13,8 +13,8 @@
 
 CRGB g_LEDs[LEDS_PER_FULL_STRIP * NUM_STRIPS] = { 0 };  // Frame buffer for FastLED
 
-int g_Brightness = 15;   // 0-255 LED brightness scale
-int g_PowerLimit = 9000;  // 900mW Power Limit
+int g_Brightness = 60;   // 0-255 LED brightness scale
+int g_PowerLimit = 50000;  // 50W Power Limit
 
 int stripByteCount = 3 * LEDS_PER_STRIP;
 void copyFrame(int frameNum, int strip, void* dest) {

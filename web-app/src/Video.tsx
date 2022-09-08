@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import CopyToClipboard from "react-copy-to-clipboard";
 
 const numStrips = 5;
-const numLeds = 150;
+const numLeds = 160;
 const ledSize = 3;
 const height = ledSize * numLeds;
 const bottomOffsetPercent = 20;
